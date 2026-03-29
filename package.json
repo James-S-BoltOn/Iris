@@ -1,0 +1,32 @@
+{
+  "name": "iris",
+  "version": "0.1.0",
+  "description": "Voice-based AI executive assistant that replaces traditional voicemail",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "voicemail",
+    "ai",
+    "assistant",
+    "elevenlabs"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.11",
+    "better-sqlite3": "^12.8.0",
+    "hono": "^4.12.9"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
