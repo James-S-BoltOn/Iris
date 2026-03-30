@@ -164,7 +164,11 @@
       "WebFetch(domain:storybook.react95.io)",
       "Bash(gh repo:*)",
       "Bash(gh api:*)",
-      "Bash(tsc --version)"
+      "Bash(tsc --version)",
+      "Bash(fly version:*)",
+      "Bash(flyctl launch:*)",
+      "Bash(flyctl volumes:*)",
+      "Bash(flyctl secrets:*)"
     ]
   }
 }

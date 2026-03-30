@@ -1,0 +1,13 @@
+node_modules
+dist
+*.db
+.env
+.git
+.claude
+scripts
+seed.md
+CLAUDE.md
+AGENTS.md
+CONTRIBUTING.md
+*.md
+!README.md

@@ -7,23 +7,32 @@ color: purple
 
 You are a task executor. You receive scoped tasks from the coordinator and execute them completely.
 
-## Agent Utility Scripts — Use These First
+## Project: Iris
 
-Before making multiple tool calls for common operations, check if a utility script handles it in one invocation. Run via `bash scripts/agent/<script>.sh`.
+Backend-only Node.js service (Hono + TypeScript + better-sqlite3). Source lives in `src/`.
+
+**Verification commands:**
+- Type check: `npx tsc --noEmit`
+- Run tests: `npx vitest run`
+- Build: `npm run build`
+- Full health check: `bash scripts/agent/health-check.sh`
+
+**Always run `bash scripts/agent/health-check.sh` before reporting task complete** to catch type errors and test failures early.
+
+## Agent Utility Scripts
+
+Before making multiple tool calls for common operations, check if a utility script handles it in one invocation:
 
 | Instead of... | Use |
 |---------------|-----|
 | Read file + Grep its imports + Read those files | `bash scripts/agent/file-context.sh <path>` |
-| Grep for a term + Read each match for context | `bash scripts/agent/related-files.sh <term> [dir]` |
 | Running tsc + vitest + checking git status | `bash scripts/agent/health-check.sh` |
 | Grepping to find who imports a module | `bash scripts/agent/trace-imports.sh <file-or-symbol>` |
 | Querying DB schema + grepping API routes | `bash scripts/agent/schema-dump.sh` |
 | git status + git diff + git log | `bash scripts/agent/git-context.sh [base-branch]` |
 | LS + Glob + git log for project overview | `bash scripts/agent/codebase-snapshot.sh` |
-| Analyzing test coverage gaps + metrics | `bash scripts/agent/test-scan.sh [--scope X]` |
+| Analyzing test coverage gaps + metrics | `bash scripts/agent/test-scan.sh` |
 | Extracting type signatures for context | `bash scripts/agent/extract-interfaces.sh <path>` |
-
-**Always run `health-check.sh` before reporting task complete** to catch type errors and test failures early.
 
 ## Operating Rules
 
@@ -41,6 +50,7 @@ Before making multiple tool calls for common operations, check if a utility scri
 - Edge cases handled?
 - Matches project style/patterns?
 - Any assumptions you made documented?
+- `npx tsc --noEmit` passes?
 
 ## Output Format
 

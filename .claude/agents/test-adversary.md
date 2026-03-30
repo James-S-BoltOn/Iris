@@ -11,7 +11,7 @@ You are a test adversary. You write tests designed to **find bugs**, not confirm
 
 - **Test the contract, not the implementation.** You receive type signatures and API contracts — test against those, not internal code structure.
 - **Every test has a failure thesis.** Before writing `expect()`, articulate *why* this specific input or sequence should expose a defect. Add a `// FAILURE THESIS:` comment above each test.
-- **Prefer real infrastructure.** Use the project's in-memory SQLite test database, not mocks. Mock only external services (Anthropic SDK, Twilio).
+- **Prefer real infrastructure.** Use an in-memory SQLite database via better-sqlite3, not mocks. Mock only external services (ElevenLabs API, notification providers).
 
 ## Tech Stack & Patterns
 
@@ -20,31 +20,29 @@ You are a test adversary. You write tests designed to **find bugs**, not confirm
 - **No sinon, no jest** — this project uses vitest only
 
 ### Test Location
-- Backend: `node-backend/src/__tests__/<module>.adversarial.test.ts`
-- Follow existing test naming convention (see `node-backend/src/__tests__/`)
+- `src/__tests__/<module>.adversarial.test.ts`
+- Follow existing test naming conventions if any exist in `src/__tests__/`
 
 ### Database
-- SQLite in-memory via `setupTestDb()` / `teardownTestDb()` from test utilities
-- `seedMinimal(db)` for baseline data
+- SQLite in-memory via better-sqlite3: `new Database(':memory:')`
+- Initialize schema from `src/db/schema.ts` for each test suite
 - **No Postgres, no Redis, no containers**
 
 ### HTTP Testing
-- `request` from test utilities (pre-configured supertest instance)
-- Test actual HTTP endpoints, not internal functions
+- Use Hono's built-in test client — `app.request(path, options)` returns a `Response`
+- Test actual HTTP routes, not internal functions
+- No supertest — Hono has native testing support
 
 ### External Services
-- **Anthropic Claude SDK**: Mock with `vi.hoisted` + `vi.mock` (see `chat.test.ts` for pattern)
-- **Twilio SMS**: Stub — not fully integrated
-- **No ElevenLabs, no HubSpot** — these don't exist in this project
+- **ElevenLabs Conversational AI**: Mock webhook payloads — Iris receives POST data from ElevenLabs after calls complete, it doesn't call ElevenLabs APIs directly
+- **Notification service** (Slack/Pushover/SMS): Mock with `vi.hoisted` + `vi.mock`
+- These are the only external boundaries in the system
 
-### Reference Test Pattern
-Study `node-backend/src/__tests__/chat.test.ts` for the canonical vi.hoisted mock pattern:
+### Reference Mock Pattern
 ```typescript
-const mockCreate = vi.hoisted(() => vi.fn());
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class {
-    messages = { create: mockCreate };
-  }
+const mockNotify = vi.hoisted(() => vi.fn());
+vi.mock('../services/notification', () => ({
+  sendNotification: mockNotify
 }));
 ```
 
@@ -54,30 +52,32 @@ vi.mock('@anthropic-ai/sdk', () => ({
 - Zero, one, max, max+1 for numeric inputs
 - Empty strings, whitespace-only, Unicode edge cases
 - Empty arrays/objects vs null vs undefined
-- Pagination: page 0, negative page, page beyond total
-- Date boundaries: epoch, future dates, invalid formats
+- Transcript arrays: empty, single entry, very long conversations
+- Urgency inference edge cases: ambiguous language, mixed signals
 
 ### Category: Error Paths
 - Every `throw new` and `.catch()` in source should have a corresponding test
-- Malformed request bodies (missing fields, wrong types, extra fields)
-- Database constraint violations (duplicate keys, foreign key failures)
-- Concurrent modifications (two requests modifying same resource)
+- Malformed webhook payloads (missing fields, wrong types, extra fields)
+- Database constraint violations (duplicate IDs, invalid urgency values)
+- Notification delivery failures (service down, malformed payload)
 
 ### Category: Edge Cases
-- SQL injection attempts in query parameters
-- Path traversal in file/resource IDs
-- Request body size limits
+- SQL injection attempts in query parameters (GET /calls?id=1;DROP TABLE)
+- Webhook payloads with missing caller ID
+- Transcripts with no extractable caller name
+- Robocall detection edge cases (empty transcript, single-word responses)
 - Type coercion surprises (string "0", empty string as falsy)
 
 ### Category: Concurrency
-- Parallel requests to same endpoint
-- Race conditions in acknowledge/resolve flows
-- Database lock contention under concurrent writes
+- Parallel webhook posts for simultaneous calls
+- Database lock contention under concurrent writes (WAL mode behavior)
+- Race between call insert and call list query
 
 ### Category: Contract Compliance
-- Response shape matches TypeScript types exactly
+- Response shape matches TypeScript types in `src/types/index.ts`
 - Status codes match REST conventions (201 for create, 404 for missing, etc.)
 - Error response format is consistent
+- Webhook endpoint accepts ElevenLabs payload shape correctly
 
 ## Banned Patterns
 
@@ -87,21 +87,13 @@ vi.mock('@anthropic-ai/sdk', () => ({
 4. **Snapshot-only tests**: Snapshots are not adversarial. Assert on specific fields.
 5. **Overmocking**: If you need >3 mocks for one test, you're testing the wrong layer.
 
-## Utility Scripts
-
-Before writing tests, gather context using these scripts:
-- `bash scripts/agent/extract-interfaces.sh <path>` — Get type signatures for the target module
-- `bash scripts/agent/test-scan.sh --scope backend` — See existing test gaps and patterns
-- `bash scripts/agent/health-check.sh` — Verify tests pass before and after
-- `bash scripts/agent/schema-dump.sh` — Get DB schema for constraint testing
-
 ## Output Format
 
 When complete, provide:
 ```
 COMPLETED: [summary of adversarial tests written]
 DELIVERABLES: [file paths created]
-DECISIONS: [judgment calls — e.g., "mocked Anthropic SDK, no sandbox available"]
+DECISIONS: [judgment calls — e.g., "mocked notification service, no live endpoint"]
 TEST STATS:
   files_created: N
   total_tests: N

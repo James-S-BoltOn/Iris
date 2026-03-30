@@ -7,9 +7,6 @@ She answers unanswered calls via AT&T conditional call forwarding (`*004*`),
 engages callers conversationally, captures structured information, and delivers
 concise push notifications to James.
 
-**Named for:** Iris, Greek messenger goddess — counterpart to Hermes.
-Bridges realms. Carries news. No IP risk (public domain mythology).
-
 ---
 
 ## Architecture
